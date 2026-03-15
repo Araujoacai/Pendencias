@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pendências — Controle de Tarefas</title>
+
+  <!-- SEO & PWA Meta -->
+  <meta name="description" content="Acompanhe suas pendências com status, valores e categorias em tempo real." />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pendências" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="header-logo">
+        <i class="fa-solid fa-clipboard-list"></i>
+      </div>
+      <div class="header-text">
+        <h1>Pendências</h1>
+        <span>Controle em tempo real</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-install" class="btn-install" title="Instalar App" style="display:none;">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+        <span>Instalar App</span>
+      </button>
+      <div class="online-badge" id="online-status">
+        <span class="pulse-dot"></span>
+        <span>Online</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== DASHBOARD CARDS ===== -->
+  <div class="dashboard">
+    <div class="card card-total">
+      <div class="card-icon"><i class="fa-solid fa-list-check"></i></div>
+      <div class="card-info">
+        <span class="card-label">Total de Itens</span>
+        <span class="card-value" id="stat-total">0</span>
+      </div>
+    </div>
+    <div class="card card-pendente">
+      <div class="card-icon"><i class="fa-solid fa-clock"></i></div>
+      <div class="card-info">
+        <span class="card-label">Pendentes</span>
+        <span class="card-value" id="stat-pendentes">0</span>
+      </div>
+    </div>
+    <div class="card card-concluido">
+      <div class="card-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <div class="card-info">
+        <span class="card-label">Concluídos</span>
+        <span class="card-value" id="stat-concluidos">0</span>
+      </div>
+    </div>
+    <div class="card card-valor">
+      <div class="card-icon"><i class="fa-solid fa-dollar-sign"></i></div>
+      <div class="card-info">
+        <span class="card-label">Valor Total</span>
+        <span class="card-value" id="stat-valor">R$ 0,00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FILTROS ===== -->
+  <div class="filters-bar">
+    <div class="filter-categories">
+      <button class="filter-btn active" data-filter="todos" id="filter-todos">
+        <i class="fa-solid fa-th-large"></i> Todos
+      </button>
+      <button class="filter-btn" data-filter="pessoa" id="filter-pessoa">
+        <i class="fa-solid fa-users"></i> Pessoas
+      </button>
+      <button class="filter-btn" data-filter="item" id="filter-item">
+        <i class="fa-solid fa-box"></i> Itens
+      </button>
+      <button class="filter-btn" data-filter="comida" id="filter-comida">
+        <i class="fa-solid fa-utensils"></i> Comidas
+      </button>
+      <button class="filter-btn" data-filter="decoracao" id="filter-decoracao">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Decoração
+      </button>
+    </div>
+    <div class="filter-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="search-input" placeholder="Buscar pendência..." />
+    </div>
+    <div class="filter-status">
+      <select id="filter-status-select">
+        <option value="todos">Todos os status</option>
+        <option value="pendente">Pendente</option>
+        <option value="andamento">Em andamento</option>
+        <option value="concluido">Concluído</option>
+        <option value="pago">Pago</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ===== TABELA ===== -->
+  <main class="main-content">
+    <div class="table-container">
+      <div class="table-header-row">
+        <h2 class="section-title" id="section-title">Todas as Pendências</h2>
+        <span class="item-count" id="item-count">0 itens</span>
+      </div>
+
+      <!-- Loading Skeleton -->
+      <div class="loading-state" id="loading-state">
+        <div class="spinner"></div>
+        <p>Carregando pendências...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <i class="fa-solid fa-clipboard-question"></i>
+        <h3>Nenhuma pendência encontrada</h3>
+        <p>Clique no botão <strong>+</strong> para adicionar uma nova pendência.</p>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrapper" id="table-wrapper" style="display:none;">
+        <table class="pendencias-table">
+          <thead>
+            <tr>
+              <th>Nome / Descrição</th>
+              <th>Categoria</th>
+              <th>Qtd / Tipo</th>
+              <th>Status</th>
+              <th>Valor</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="pendencias-tbody">
+            <!-- Preenchido pelo JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FAB (Botão Adicionar) ===== -->
+  <button class="fab" id="btn-add" title="Adicionar pendência">
+    <i class="fa-solid fa-plus"></i>
+  </button>
+
+  <!-- ===== MODAL ADICIONAR/EDITAR ===== -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 id="modal-title"><i class="fa-solid fa-plus-circle"></i> Nova Pendência</h2>
+        <button class="modal-close" id="modal-close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="pendencia-form" class="modal-form">
+        <input type="hidden" id="pendencia-id" />
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-nome"><i class="fa-solid fa-tag"></i> Nome / Descrição *</label>
+            <input type="text" id="input-nome" placeholder="Ex: Comprar carne, João deve..." required />
+          </div>
+          <div class="form-group">
+            <label for="input-categoria"><i class="fa-solid fa-folder"></i> Categoria *</label>
+            <select id="input-categoria" required>
+              <option value="">Selecione...</option>
+              <option value="pessoa">👤 Pessoa</option>
+              <option value="item">📦 Item / Compra</option>
+              <option value="comida">🍽️ Comida</option>
+              <option value="decoracao">✨ Decoração</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-quantidade"><i class="fa-solid fa-hashtag"></i> Quantidade</label>
+            <input type="number" id="input-quantidade" placeholder="Ex: 5" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="input-tipo"><i class="fa-solid fa-shapes"></i> Tipo / Unidade</label>
+            <input type="text" id="input-tipo" placeholder="Ex: Kg, Uni, Maço, AND..." />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-status"><i class="fa-solid fa-circle-half-stroke"></i> Status *</label>
+            <select id="input-status" required>
+              <option value="pendente">🔴 Pendente</option>
+              <option value="andamento">🟡 Em andamento</option>
+              <option value="concluido">🟢 Concluído</option>
+              <option value="pago">🔵 Pago</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="input-valor"><i class="fa-solid fa-brazilian-real-sign"></i> Valor (R$)</label>
+            <input type="number" id="input-valor" placeholder="Ex: 600.00" min="0" step="0.01" />
+          </div>
+        </div>
+
+        <div class="form-group form-group-full">
+          <label for="input-obs"><i class="fa-solid fa-note-sticky"></i> Observação</label>
+          <textarea id="input-obs" placeholder="Detalhes adicionais..." rows="3"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btn-cancel">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btn-save">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CONFIRMAR EXCLUSÃO ===== -->
+  <div class="modal-overlay" id="confirm-overlay">
+    <div class="modal confirm-modal">
+      <div class="confirm-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h3>Confirmar Exclusão</h3>
+      <p>Tem certeza que deseja excluir esta pendência? Esta ação não pode ser desfeita.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="confirm-cancel">Cancelar</button>
+        <button class="btn-danger" id="confirm-delete">
+          <i class="fa-solid fa-trash"></i> Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST NOTIFICAÇÕES ===== -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ===== FIREBASE SDK (via CDN modular) ===== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+
+    // Importa a config local (não commitada no GitHub)
+    // Como é module, precisamos definir a config inline aqui ou usar uma abordagem diferente
+    // Para máxima segurança em produção, usar variáveis de ambiente num servidor
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCbjc5khr_Q4ZFh9f8B4wpLQoswC-KUrE",
+      authDomain: "barbertimelogin.firebaseapp.com",
+      projectId: "barbertimelogin",
+      storageBucket: "barbertimelogin.firebasestorage.app",
+      messagingSenderId: "498054197183",
+      appId: "1:498054197183:web:7dc7041908c44671f33b0a",
+      measurementId: "G-N17Z32PQ9H"
+    };
+
+    // Inicializa Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    getAnalytics(app);
+
+    // Torna o db e funções disponíveis globalmente para o app.js
+    window.firebaseDB = db;
+    window.firebaseFns = {
+      collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp
+    };
+
+    // Carrega o script principal após Firebase estar pronto
+    const script = document.createElement('script');
+    script.src = 'app.js';
+    document.body.appendChild(script);
+  </script>
+
+</body>
+</html>
