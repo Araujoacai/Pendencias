@@ -45,6 +45,15 @@
         <span class="pulse-dot"></span>
         <span>Online</span>
       </div>
+      <!-- Usuário autenticado -->
+      <div class="user-info" id="user-info" style="display:none;">
+        <img class="user-avatar" id="user-avatar" src="" alt="" />
+        <span class="user-name" id="user-name"></span>
+      </div>
+      <button class="btn-logout" id="btn-logout" title="Sair" style="display:none;">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Sair</span>
+      </button>
     </div>
   </header>
 
@@ -255,11 +264,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
-    // Importa a config local (não commitada no GitHub)
-    // Como é module, precisamos definir a config inline aqui ou usar uma abordagem diferente
-    // Para máxima segurança em produção, usar variáveis de ambiente num servidor
     const firebaseConfig = {
       apiKey: "AIzaSyCCbjc5khr_Q4ZFh9f8B4wpLQoswC-KUrE",
       authDomain: "barbertimelogin.firebaseapp.com",
@@ -270,21 +277,67 @@
       measurementId: "G-N17Z32PQ9H"
     };
 
-    // Inicializa Firebase
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db  = getFirestore(app);
+    const auth = getAuth(app);
     getAnalytics(app);
 
-    // Torna o db e funções disponíveis globalmente para o app.js
-    window.firebaseDB = db;
-    window.firebaseFns = {
-      collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp
-    };
+    // ── Proteção de Rota ──────────────────────────────
+    // Mostra loading enquanto verifica autenticação
+    document.body.style.opacity = '0';
+    document.body.style.transition = 'opacity 0.3s ease';
 
-    // Carrega o script principal após Firebase estar pronto
-    const script = document.createElement('script');
-    script.src = 'app.js';
-    document.body.appendChild(script);
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Não autenticado → redireciona para login
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Autenticado → exibe a interface
+      document.body.style.opacity = '1';
+
+      // Atualiza header com dados do usuário
+      const userInfo   = document.getElementById('user-info');
+      const userAvatar = document.getElementById('user-avatar');
+      const userName   = document.getElementById('user-name');
+      const btnLogout  = document.getElementById('btn-logout');
+
+      userInfo.style.display   = 'flex';
+      btnLogout.style.display  = 'flex';
+
+      userName.textContent = user.displayName || user.email.split('@')[0];
+      if (user.photoURL) {
+        userAvatar.src = user.photoURL;
+        userAvatar.style.display = 'block';
+      } else {
+        // Fallback: inicial do nome
+        userAvatar.style.display = 'none';
+        userInfo.querySelector('.user-initials') && userInfo.querySelector('.user-initials').remove();
+        const initials = document.createElement('div');
+        initials.className = 'user-initials';
+        initials.textContent = (user.displayName || user.email)[0].toUpperCase();
+        userInfo.insertBefore(initials, userName);
+      }
+
+      // Botão logout
+      btnLogout.addEventListener('click', async () => {
+        await signOut(auth);
+        window.location.href = 'login.html';
+      });
+
+      // Expõe Firebase para o app.js
+      window.firebaseDB   = db;
+      window.firebaseUser = user;
+      window.firebaseFns  = {
+        collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp
+      };
+
+      // Carrega o script principal
+      const script = document.createElement('script');
+      script.src = 'app.js';
+      document.body.appendChild(script);
+    });
   </script>
 
 </body>
