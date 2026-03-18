@@ -244,6 +244,18 @@
           <textarea id="input-obs" placeholder="Detalhes adicionais..." rows="3"></textarea>
         </div>
 
+        <!-- SEÇÃO RAPIDA PARA FAMILIAS -->
+        <div id="family-members-section" class="family-section">
+          <h4><i class="fa-solid fa-users"></i> Membros desta Família</h4>
+          <ul id="family-members-list" class="family-list">
+            <!-- preenchido via JS -->
+          </ul>
+          <div class="family-add-box">
+            <input type="text" id="input-new-family-member" placeholder="Nome do novo membro..." />
+            <button type="button" id="btn-add-family-member"><i class="fa-solid fa-plus"></i> Add Rápido</button>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button type="button" class="btn-secondary" id="btn-cancel">Cancelar</button>
           <button type="submit" class="btn-primary" id="btn-save">

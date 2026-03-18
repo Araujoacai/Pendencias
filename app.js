@@ -46,6 +46,11 @@ const els = {
   inputFamilia: $('input-familia'),
   inputValor: $('input-valor'),
   inputObs: $('input-obs'),
+  // Family Section
+  sectionFamilia: $('family-members-section'),
+  listFamilia: $('family-members-list'),
+  inputNovoFamiliar: $('input-new-family-member'),
+  btnAddFamiliar: $('btn-add-family-member'),
   // Confirm Modal
   confirmOverlay: $('confirm-overlay'),
   // PWA
@@ -228,6 +233,12 @@ function initFirestore() {
     state.pendencias = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderStats();
     renderTabela();
+    
+    // Auto-update da lista da familia se o modal estiver aberto focando nela
+    if (els.sectionFamilia && els.sectionFamilia.style.display === 'block') {
+      const fam = Number(els.inputFamilia.value);
+      if (fam && window.renderFamilyMembers) window.renderFamilyMembers(fam);
+    }
   }, (err) => {
     console.error('Firestore error:', err);
     els.loadingState.style.display = 'none';
@@ -279,6 +290,7 @@ window.cycleStatus = async function(id, currentStatus) {
 function openModal() {
   els.pendenciaId.value = '';
   els.pendenciaForm.reset();
+  if(window.checkFamilySection) window.checkFamilySection();
   els.modalTitle.innerHTML = '<i class="fa-solid fa-plus-circle"></i> Nova Pendência';
   els.modalOverlay.classList.add('active');
   setTimeout(() => els.inputNome.focus(), 50);
@@ -299,6 +311,9 @@ window.openEdit = function(id) {
   els.inputObs.value = p.observacao || '';
 
   els.modalTitle.innerHTML = '<i class="fa-solid fa-pen"></i> Editar Pendência';
+  
+  if(window.checkFamilySection) window.checkFamilySection();
+  
   els.modalOverlay.classList.add('active');
 };
 
@@ -427,6 +442,86 @@ function bindEvents() {
   els.confirmOverlay.addEventListener('click', (e) => {
     if (e.target === els.confirmOverlay) closeConfirm();
   });
+
+  // ========== LÓGICA MEMBROS DA FAMÍLIA RAPIDO ==========
+  window.checkFamilySection = function() {
+    const cat = els.inputCategoria.value;
+    const famStr = els.inputFamilia.value;
+    const fam = Number(famStr);
+    
+    if (cat === 'pessoa' && famStr && fam > 0) {
+      els.sectionFamilia.style.display = 'block';
+      window.renderFamilyMembers(fam);
+    } else {
+      els.sectionFamilia.style.display = 'none';
+      els.listFamilia.innerHTML = '';
+    }
+  };
+
+  els.inputCategoria.addEventListener('change', window.checkFamilySection);
+  els.inputFamilia.addEventListener('input', window.checkFamilySection);
+
+  window.renderFamilyMembers = function(famNumber) {
+    const members = state.pendencias.filter(p => p.categoria === 'pessoa' && p.familia === famNumber);
+    els.listFamilia.innerHTML = '';
+    
+    if (members.length === 0) {
+      els.listFamilia.innerHTML = '<li class="family-empty" style="font-size:12px; color:var(--text-muted); padding:4px;">Família nova. Adicione membros!</li>';
+      return;
+    }
+
+    members.forEach(m => {
+      const li = document.createElement('li');
+      li.className = 'family-list-item';
+      li.innerHTML = `
+        <span><i class="fa-solid fa-user-check" style="color:var(--purple); margin-right:6px;"></i> <strong>${escapeHtml(m.nome)}</strong></span>
+        <span class="status-badge status-${m.status}" style="font-size:10px; padding:2px 8px;">${statusInfo[m.status]?.label || m.status}</span>
+      `;
+      els.listFamilia.appendChild(li);
+    });
+  };
+
+  els.btnAddFamiliar.addEventListener('click', async () => {
+    const nome = els.inputNovoFamiliar.value.trim();
+    const fam = Number(els.inputFamilia.value);
+    
+    if (!nome) return;
+    
+    els.btnAddFamiliar.disabled = true;
+    els.btnAddFamiliar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    try {
+      await addDoc(collection(db, COL), {
+        nome: nome,
+        categoria: 'pessoa',
+        familia: fam,
+        quantidade: null,
+        tipo: null,
+        status: 'pendente',
+        valor: null,
+        observacao: null,
+        criadoEm: serverTimestamp(),
+        atualizadoEm: serverTimestamp()
+      });
+      showToast('Familiar cadastrado rapidamente!', 'success');
+      els.inputNovoFamiliar.value = '';
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao inserir rápido', 'error');
+    }
+    
+    els.btnAddFamiliar.disabled = false;
+    els.btnAddFamiliar.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
+  });
+  
+  // Quando o inputNovoFamiliar der ENTER, clica no add
+  els.inputNovoFamiliar.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      els.btnAddFamiliar.click();
+    }
+  });
+  // =======================================================
 
   // PWA Install
   els.btnInstall.addEventListener('click', async () => {
