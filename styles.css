@@ -163,7 +163,7 @@ body::before {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   padding: 24px 24px 0;
 }
@@ -198,6 +198,7 @@ body::before {
 }
 
 .card-total::before { background: linear-gradient(90deg, var(--purple), #4f46e5); }
+.card-familia::before { background: #06b6d4; }
 .card-pendente::before { background: var(--status-pendente); }
 .card-concluido::before { background: var(--status-concluido); }
 .card-valor::before { background: var(--status-andamento); }
@@ -214,6 +215,7 @@ body::before {
 }
 
 .card-total .card-icon { background: rgba(124,58,237,0.15); color: var(--purple-light); }
+.card-familia .card-icon { background: rgba(6,182,212,0.15); color: #22d3ee; }
 .card-pendente .card-icon { background: var(--status-pendente-bg); color: var(--status-pendente); }
 .card-concluido .card-icon { background: var(--status-concluido-bg); color: var(--status-concluido); }
 .card-valor .card-icon { background: var(--status-andamento-bg); color: var(--status-andamento); }
@@ -446,6 +448,22 @@ body::before {
 .cat-comida { background: rgba(245,158,11,0.15); color: #fbbf24; }
 .cat-decoracao { background: rgba(236,72,153,0.15); color: #f472b6; }
 
+/* Badge da Família na Tabela */
+.familia-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: rgba(6,182,212,0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(6,182,212,0.25);
+}
+
 /* Status badges */
 .status-badge {
   display: inline-flex;
@@ -597,6 +615,7 @@ body::before {
 /* Form */
 .modal-form { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 .form-group-full { grid-column: 1 / -1; }
 
 .form-group { display: flex; flex-direction: column; gap: 8px; }

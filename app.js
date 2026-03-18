@@ -25,6 +25,7 @@ const els = {
   sectionTitle: $('section-title'),
   // Stats
   statTotal: $('stat-total'),
+  statFamilias: $('stat-familias'),
   statPendentes: $('stat-pendentes'),
   statConcluidos: $('stat-concluidos'),
   statValor: $('stat-valor'),
@@ -42,6 +43,7 @@ const els = {
   inputQuantidade: $('input-quantidade'),
   inputTipo: $('input-tipo'),
   inputStatus: $('input-status'),
+  inputFamilia: $('input-familia'),
   inputValor: $('input-valor'),
   inputObs: $('input-obs'),
   // Confirm Modal
@@ -112,11 +114,13 @@ function filtrarPendencias() {
 
 function renderStats() {
   const total = state.pendencias.length;
+  const familias = new Set(state.pendencias.filter(p => p.familia).map(p => p.familia)).size;
   const pendentes = state.pendencias.filter(p => p.status === 'pendente').length;
   const concluidos = state.pendencias.filter(p => ['concluido', 'pago'].includes(p.status)).length;
   const valor = state.pendencias.reduce((acc, p) => acc + (Number(p.valor) || 0), 0);
 
   animNumber(els.statTotal, total);
+  animNumber(els.statFamilias, familias);
   animNumber(els.statPendentes, pendentes);
   animNumber(els.statConcluidos, concluidos);
   els.statValor.textContent = `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -165,6 +169,12 @@ function renderTabela() {
       <td>
         <div class="cell-nome">${escapeHtml(p.nome)}</div>
         ${p.observacao ? `<div class="cell-obs">${escapeHtml(p.observacao)}</div>` : ''}
+      </td>
+      <td>
+        ${p.familia
+          ? `<span class="familia-badge"><i class="fa-solid fa-people-roof"></i> ${p.familia}</span>`
+          : `<span style="color:var(--text-muted)">—</span>`
+        }
       </td>
       <td>
         <span class="cat-badge cat-${p.categoria}">
@@ -280,6 +290,7 @@ window.openEdit = function(id) {
 
   els.pendenciaId.value = id;
   els.inputNome.value = p.nome || '';
+  els.inputFamilia.value = p.familia || '';
   els.inputCategoria.value = p.categoria || '';
   els.inputQuantidade.value = p.quantidade || '';
   els.inputTipo.value = p.tipo || '';
@@ -374,6 +385,7 @@ function bindEvents() {
 
     await savePendencia({
       nome: els.inputNome.value.trim(),
+      familia: els.inputFamilia.value ? Number(els.inputFamilia.value) : null,
       categoria: els.inputCategoria.value,
       quantidade: els.inputQuantidade.value ? Number(els.inputQuantidade.value) : null,
       tipo: els.inputTipo.value.trim() || null,
