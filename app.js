@@ -10,7 +10,9 @@ const state = {
   filtroStatus: 'todos',
   busca: '',
   idParaExcluir: null,
-  deferredPrompt: null
+  deferredPrompt: null,
+  sortKey: null,   // 'nome' | 'categoria' | 'status' | 'valor'
+  sortDir: 'asc',  // 'asc' | 'desc'
 };
 
 // ── Referências do DOM ──────────────────────────────
@@ -18,6 +20,7 @@ const $ = (id) => document.getElementById(id);
 
 const els = {
   tbody: $('pendencias-tbody'),
+  mobileCards: $('mobile-cards'),
   loadingState: $('loading-state'),
   emptyState: $('empty-state'),
   tableWrapper: $('table-wrapper'),
@@ -121,14 +124,38 @@ function renderStats() {
   const total = state.pendencias.length;
   const familias = new Set(state.pendencias.filter(p => p.familia).map(p => p.familia)).size;
   const pendentes = state.pendencias.filter(p => p.status === 'pendente').length;
-  const concluidos = state.pendencias.filter(p => ['concluido', 'pago'].includes(p.status)).length;
+  const andamento = state.pendencias.filter(p => p.status === 'andamento').length;
+  const concluidos = state.pendencias.filter(p => p.status === 'concluido').length;
+  const pagos = state.pendencias.filter(p => p.status === 'pago').length;
+  const concluidos_total = concluidos + pagos;
   const valor = state.pendencias.reduce((acc, p) => acc + (Number(p.valor) || 0), 0);
 
   animNumber(els.statTotal, total);
   animNumber(els.statFamilias, familias);
   animNumber(els.statPendentes, pendentes);
-  animNumber(els.statConcluidos, concluidos);
+  animNumber(els.statConcluidos, concluidos_total);
   els.statValor.textContent = `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+  // Barra de progresso
+  const pct = total > 0 ? Math.round((concluidos_total / total) * 100) : 0;
+  const fill = $('progress-fill');
+  const pctEl = $('progress-pct');
+  if (fill) {
+    fill.style.width = `${pct}%`;
+    fill.title = `${pct}% concluído`;
+  }
+  if (pctEl) pctEl.textContent = `${pct}%`;
+
+  const seg = (id, count, label) => {
+    const el = $(id);
+    if (el) el.textContent = `${count} ${label}`;
+  };
+  seg('pseg-pendente', pendentes, pendentes === 1 ? 'pendente' : 'pendentes');
+  seg('pseg-andamento', andamento, andamento === 1 ? 'em andamento' : 'em andamento');
+  seg('pseg-concluido', concluidos, concluidos === 1 ? 'concluído' : 'concluídos');
+  seg('pseg-pago', pagos, pagos === 1 ? 'pago' : 'pagos');
+
+  updateFilterCounts();
 }
 
 function animNumber(el, target) {
@@ -145,11 +172,54 @@ function animNumber(el, target) {
   }, 40);
 }
 
+function updateFilterCounts() {
+  const cats = ['pessoa', 'item', 'comida', 'decoracao'];
+  const total = state.pendencias.length;
+  const el = document.getElementById('fcount-todos');
+  if (el) el.textContent = total;
+  cats.forEach(cat => {
+    const count = state.pendencias.filter(p => p.categoria === cat).length;
+    const span = document.getElementById(`fcount-${cat}`);
+    if (span) span.textContent = count;
+  });
+}
+
+function sortPendencias(lista) {
+  if (!state.sortKey) return lista;
+  return [...lista].sort((a, b) => {
+    let va = a[state.sortKey];
+    let vb = b[state.sortKey];
+    if (state.sortKey === 'valor') {
+      va = Number(va) || 0;
+      vb = Number(vb) || 0;
+    } else {
+      va = (va || '').toString().toLowerCase();
+      vb = (vb || '').toString().toLowerCase();
+    }
+    if (va < vb) return state.sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return state.sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+function getDateDisplay(ts) {
+  if (!ts?.toDate) return '';
+  const d = ts.toDate();
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return 'hoje';
+  if (diff === 1) return 'ontem';
+  if (diff < 7) return `há ${diff} dias`;
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
 function renderTabela() {
-  const lista = filtrarPendencias();
+  const listaFiltrada = filtrarPendencias();
+  const lista = sortPendencias(listaFiltrada);
 
   els.tableWrapper.style.display = 'none';
   els.emptyState.style.display = 'none';
+  if (els.mobileCards) els.mobileCards.innerHTML = '';
 
   els.sectionTitle.textContent = catTitles[state.filtroCategoria] || 'Todas as Pendências';
   els.itemCount.textContent = `${lista.length} ${lista.length === 1 ? 'item' : 'itens'}`;
@@ -168,11 +238,14 @@ function renderTabela() {
     const statusLabel = statusInfo[p.status]?.label || p.status;
     const valorFmt = formatCurrency(p.valor);
     const qtdTipo = [p.quantidade, p.tipo].filter(Boolean).join(' ');
+    const dateHint = getDateDisplay(p.criadoEm);
 
+    // ── Desktop table row ──
     const tr = document.createElement('tr');
+    tr.className = `row-${p.categoria || 'sem'}`;
     tr.innerHTML = `
       <td>
-        <div class="cell-nome">${escapeHtml(p.nome)}</div>
+        <div class="cell-nome" title="${dateHint ? 'Adicionado ' + dateHint : ''}">${escapeHtml(p.nome)}</div>
         ${p.observacao ? `<div class="cell-obs">${escapeHtml(p.observacao)}</div>` : ''}
       </td>
       <td>
@@ -183,7 +256,8 @@ function renderTabela() {
       </td>
       <td>
         <span class="cat-badge cat-${p.categoria}">
-          <i class="fa-solid ${cat.icon}"></i> ${cat.label}
+          <span class="cat-icon"><i class="fa-solid ${cat.icon}"></i></span>
+          ${cat.label}
         </span>
       </td>
       <td class="td-tipo">${escapeHtml(qtdTipo) || '<span style="color:var(--text-muted)">—</span>'}</td>
@@ -211,6 +285,41 @@ function renderTabela() {
       </td>
     `;
     els.tbody.appendChild(tr);
+
+    // ── Mobile card ──
+    if (els.mobileCards) {
+      const mcard = document.createElement('div');
+      mcard.className = `m-card row-${p.categoria || 'sem'}`;
+      mcard.innerHTML = `
+        <div class="m-card-top">
+          <div>
+            <div class="m-card-name">${escapeHtml(p.nome)}</div>
+            ${p.observacao ? `<div class="m-card-obs">${escapeHtml(p.observacao)}</div>` : ''}
+          </div>
+          <span class="cat-badge cat-${p.categoria}" style="flex-shrink:0;">
+            <span class="cat-icon"><i class="fa-solid ${cat.icon}"></i></span>
+            ${cat.label}
+          </span>
+        </div>
+        <div class="m-card-row">
+          ${p.familia ? `<span class="familia-badge"><i class="fa-solid fa-people-roof"></i> Família ${p.familia}</span>` : ''}
+          ${qtdTipo ? `<span style="font-size:13px; color:var(--text-muted);">${escapeHtml(qtdTipo)}</span>` : ''}
+          ${dateHint ? `<span style="font-size:11px; color:var(--text-muted);"><i class="fa-regular fa-clock" style="margin-right:3px;"></i>${dateHint}</span>` : ''}
+        </div>
+        <div class="m-card-footer">
+          <button class="status-badge ${statusClass}" onclick="cycleStatus('${p.id}', '${p.status}')" title="Alterar status">
+            <span class="status-dot"></span>
+            ${statusLabel}
+          </button>
+          <div class="m-card-actions">
+            ${valorFmt ? `<span class="cell-valor" style="font-size:14px;">${valorFmt}</span>` : ''}
+            <button class="btn-action edit" onclick="openEdit('${p.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-action delete" onclick="confirmDelete('${p.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+      els.mobileCards.appendChild(mcard);
+    }
   });
 }
 
@@ -428,6 +537,56 @@ function bindEvents() {
   els.filterStatusSelect.addEventListener('change', (e) => {
     state.filtroStatus = e.target.value;
     renderTabela();
+  });
+
+  // ── Ordenação por coluna ──
+  document.querySelectorAll('.pendencias-table thead th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (state.sortKey === key) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sortKey = key;
+        state.sortDir = 'asc';
+      }
+      // Atualiza classes visuais
+      document.querySelectorAll('.pendencias-table thead th').forEach(t => {
+        t.classList.remove('sort-asc', 'sort-desc');
+      });
+      th.classList.add(state.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+      renderTabela();
+    });
+  });
+
+  // ── Atalhos de teclado ──
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+K ou Cmd+K: foca na busca
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      els.searchInput.focus();
+      els.searchInput.select();
+    }
+    // N: abre modal de nova pendência (apenas se não estiver em input)
+    if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const tag = document.activeElement.tagName.toLowerCase();
+      if (!['input', 'textarea', 'select'].includes(tag)) {
+        e.preventDefault();
+        openModal();
+      }
+    }
+    // Escape: fecha modais
+    if (e.key === 'Escape') {
+      if (els.modalOverlay.classList.contains('active')) closeModal();
+      if (els.confirmOverlay.classList.contains('active')) closeConfirm();
+    }
+  });
+
+  // ── Dica de atalho na busca ──
+  els.searchInput.addEventListener('focus', () => {
+    els.searchInput.placeholder = 'Buscar pendência... (Ctrl+K)';
+  });
+  els.searchInput.addEventListener('blur', () => {
+    els.searchInput.placeholder = 'Buscar pendência...';
   });
 
   // Delete confirm

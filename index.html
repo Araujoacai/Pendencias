@@ -41,6 +41,10 @@
         <i class="fa-solid fa-mobile-screen-button"></i>
         <span>Instalar App</span>
       </button>
+      <a href="importar.html" class="btn-import-link" title="Importar planilha Excel">
+        <i class="fa-solid fa-file-import"></i>
+        <span>Importar</span>
+      </a>
       <div class="online-badge" id="online-status">
         <span class="pulse-dot"></span>
         <span>Online</span>
@@ -96,23 +100,67 @@
     </div>
   </div>
 
+  <!-- ===== BARRA DE PROGRESSO ===== -->
+  <div class="progress-bar-section">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-header">
+        <span class="progress-bar-label">
+          <i class="fa-solid fa-chart-simple"></i>
+          Progresso Geral
+        </span>
+        <span class="progress-bar-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <div class="progress-segments">
+        <span class="progress-seg">
+          <span class="progress-seg-dot" style="background: var(--status-pendente);"></span>
+          <span id="pseg-pendente">0 pendentes</span>
+        </span>
+        <span class="progress-seg">
+          <span class="progress-seg-dot" style="background: var(--status-andamento);"></span>
+          <span id="pseg-andamento">0 em andamento</span>
+        </span>
+        <span class="progress-seg">
+          <span class="progress-seg-dot" style="background: var(--status-concluido);"></span>
+          <span id="pseg-concluido">0 concluídos</span>
+        </span>
+        <span class="progress-seg">
+          <span class="progress-seg-dot" style="background: var(--status-pago);"></span>
+          <span id="pseg-pago">0 pagos</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== FILTROS ===== -->
   <div class="filters-bar">
     <div class="filter-categories">
       <button class="filter-btn active" data-filter="todos" id="filter-todos">
-        <i class="fa-solid fa-th-large"></i> Todos
+        <span class="fi-icon"><i class="fa-solid fa-th-large"></i></span>
+        Todos
+        <span class="fi-count" id="fcount-todos">0</span>
       </button>
       <button class="filter-btn" data-filter="pessoa" id="filter-pessoa">
-        <i class="fa-solid fa-users"></i> Pessoas
+        <span class="fi-icon"><i class="fa-solid fa-users"></i></span>
+        Pessoas
+        <span class="fi-count" id="fcount-pessoa">0</span>
       </button>
       <button class="filter-btn" data-filter="item" id="filter-item">
-        <i class="fa-solid fa-box"></i> Itens
+        <span class="fi-icon"><i class="fa-solid fa-box"></i></span>
+        Itens
+        <span class="fi-count" id="fcount-item">0</span>
       </button>
       <button class="filter-btn" data-filter="comida" id="filter-comida">
-        <i class="fa-solid fa-utensils"></i> Comidas
+        <span class="fi-icon"><i class="fa-solid fa-utensils"></i></span>
+        Comidas
+        <span class="fi-count" id="fcount-comida">0</span>
       </button>
       <button class="filter-btn" data-filter="decoracao" id="filter-decoracao">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> Decoração
+        <span class="fi-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+        Decoração
+        <span class="fi-count" id="fcount-decoracao">0</span>
       </button>
     </div>
     <div class="filter-search">
@@ -156,12 +204,12 @@
         <table class="pendencias-table">
           <thead>
             <tr>
-              <th>Nome / Descrição</th>
+              <th class="sortable" data-sort="nome">Nome / Descrição <span class="sort-icon"><i class="fa-solid fa-caret-up sort-arrow sort-arrow-up"></i><i class="fa-solid fa-caret-down sort-arrow"></i></span></th>
               <th>Família</th>
-              <th>Categoria</th>
-              <th>Qtd / Tipo</th>
-              <th>Status</th>
-              <th>Valor</th>
+              <th class="sortable" data-sort="categoria">Categoria <span class="sort-icon"><i class="fa-solid fa-caret-up sort-arrow sort-arrow-up"></i><i class="fa-solid fa-caret-down sort-arrow"></i></span></th>
+              <th class="th-tipo">Qtd / Tipo</th>
+              <th class="sortable" data-sort="status">Status <span class="sort-icon"><i class="fa-solid fa-caret-up sort-arrow sort-arrow-up"></i><i class="fa-solid fa-caret-down sort-arrow"></i></span></th>
+              <th class="sortable" data-sort="valor">Valor <span class="sort-icon"><i class="fa-solid fa-caret-up sort-arrow sort-arrow-up"></i><i class="fa-solid fa-caret-down sort-arrow"></i></span></th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -169,6 +217,11 @@
             <!-- Preenchido pelo JS -->
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="mobile-cards" id="mobile-cards">
+        <!-- Preenchido pelo JS -->
       </div>
     </div>
   </main>
