@@ -275,6 +275,13 @@ function renderTabela() {
       </td>
       <td>
         <div class="actions-cell">
+          ${(p.status !== 'concluido' && p.status !== 'pago') ? `
+          <button class="btn-action concluir" onclick="markConcluido('${p.id}', '${p.status}')" title="Marcar como Concluído">
+            <i class="fa-solid fa-circle-check"></i>
+          </button>` : `
+          <button class="btn-action concluido-done" disabled title="Já concluído">
+            <i class="fa-solid fa-circle-check"></i>
+          </button>`}
           <button class="btn-action edit" onclick="openEdit('${p.id}')" title="Editar">
             <i class="fa-solid fa-pen"></i>
           </button>
@@ -313,6 +320,9 @@ function renderTabela() {
           </button>
           <div class="m-card-actions">
             ${valorFmt ? `<span class="cell-valor" style="font-size:14px;">${valorFmt}</span>` : ''}
+            ${(p.status !== 'concluido' && p.status !== 'pago') ? `
+            <button class="btn-action concluir" onclick="markConcluido('${p.id}', '${p.status}')" title="Concluir"><i class="fa-solid fa-circle-check"></i></button>` : `
+            <button class="btn-action concluido-done" disabled title="Já concluído"><i class="fa-solid fa-circle-check"></i></button>`}
             <button class="btn-action edit" onclick="openEdit('${p.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
             <button class="btn-action delete" onclick="confirmDelete('${p.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>
           </div>
@@ -392,6 +402,17 @@ window.cycleStatus = async function(id, currentStatus) {
     showToast(`Status → ${statusInfo[next].label}`, 'info');
   } catch (err) {
     showToast('Erro ao alterar status.', 'error');
+  }
+};
+
+// Marca diretamente como Concluído com um clique
+window.markConcluido = async function(id, currentStatus) {
+  if (currentStatus === 'concluido' || currentStatus === 'pago') return;
+  try {
+    await updateDoc(doc(db, COL, id), { status: 'concluido', atualizadoEm: serverTimestamp() });
+    showToast('✅ Marcado como Concluído!', 'success');
+  } catch (err) {
+    showToast('Erro ao concluir pendência.', 'error');
   }
 };
 

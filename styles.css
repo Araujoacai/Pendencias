@@ -782,6 +782,8 @@ body::before {
   font-size: 13px;
 }
 
+.btn-action.concluir:hover { background: rgba(34,197,94,0.15); color: #22c55e; border-color: #22c55e; }
+.btn-action.concluido-done { color: #22c55e; cursor: default; opacity: 0.5; border-color: transparent; background: transparent; }
 .btn-action.edit:hover { background: rgba(124,58,237,0.15); color: var(--purple-light); border-color: var(--purple); }
 .btn-action.delete:hover { background: rgba(239,68,68,0.12); color: var(--status-pendente); border-color: rgba(239,68,68,0.3); }
 
